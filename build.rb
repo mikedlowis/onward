@@ -27,21 +27,19 @@ test_env = base_env.clone do |env|
 end
 
 #------------------------------------------------------------------------------
+# Test Build Targets
+#------------------------------------------------------------------------------
+unless Opts[:profile].include? "no-tests"
+  test_env.Program('onward-tests', [
+      'source/onward/onward.c',
+      'modules/atf/source/atf.c'] +
+      Dir['tests/**/*.c'])
+  test_env.Command('TESTS', [], 'CMD' => ['./onward-tests'])
+end
+
+#------------------------------------------------------------------------------
 # Release Build Targets
 #------------------------------------------------------------------------------
 main_env.Library('libonward.a', FileList['source/onward/*.c'])
 main_env.Program('onward', ['source/main.c', 'libonward.a'])
 
-#------------------------------------------------------------------------------
-# Test Build Targets
-#------------------------------------------------------------------------------
-if Opts[:profile].include? "test"
-    test_env.Program('onward-tests', [
-        'source/onward/onward.c',
-        'modules/atf/source/atf.c'] +
-        Dir['tests/**/*.c'])
-    test_env.Command('TESTS', [], 'CMD' => ['./onward-tests'])
-#    FileList['source/sclpl/*.c', 'build/lib/libopts.a', 'build/lib/libcds.a'])
-#  test_env.Command('RSpec', [], 'CMD' => [
-#      'rspec', '--pattern', 'spec/**{,/*/**}/*_spec.rb', '--format', 'documentation'])
-end

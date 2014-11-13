@@ -1,13 +1,6 @@
 #include "onward.h"
 #include <stdio.h>
 
-//extern value_t input;
-//extern value_t state;
-//extern value_t errno;
-//extern value_t asb;
-//extern value_t asp;
-//extern value_t rsb;
-//extern value_t rsp;
 
 #define STACK_SZ (64u)
 
@@ -36,7 +29,16 @@ int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    onward_init(Arg_Stack_Buf, Ret_Stack_Buf, Ram_Data_Buf, (word_t*)&bnot);
+    onward_init_t init_data = {
+        Arg_Stack_Buf,
+        STACK_SZ,
+        Ret_Stack_Buf,
+        STACK_SZ,
+        Ram_Data_Buf,
+        8192/sizeof(value_t),
+        (word_t*)&bnot
+    };
+    onward_init(&init_data);
 
     printf(":> ");
     while(0 != (input = (value_t)fgets(Input_Line, 1024u, stdin))) {

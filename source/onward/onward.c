@@ -27,14 +27,18 @@ defvar("pc", pc, 0, &F_IMMEDIATE_word);
 /** The address of the base of the argument stack */
 defvar("asb", asb, 0, &pc_word);
 
+defvar("assz", assz, 0, &asb_word);
+
 /** The address of the top of the argument stack */
-defvar("asp", asp, 0, &asb_word);
+defvar("asp", asp, 0, &assz_word);
 
 /** The address of the base of the return stack */
 defvar("rsb", rsb, 0, &asp_word);
 
+defvar("rssz", rssz, 0, &rsb_word);
+
 /** The address of the top of the return stack */
-defvar("rsp", rsp, 0, &rsb_word);
+defvar("rsp", rsp, 0, &rssz_word);
 
 /** The address of the current input string */
 defvar("input", input, 0, &rsp_word);
@@ -449,13 +453,14 @@ defcode("~", bnot, &bxor, 0u) {
 
 /* Helper C Functions
  *****************************************************************************/
-void onward_init(value_t* arg_stack, value_t* ret_stack, value_t* ram_buf, word_t* latest_word) {
-    asb    = (value_t)arg_stack;
-    asp    = (value_t)arg_stack;
-    rsb    = (value_t)ret_stack;
-    rsp    = (value_t)ret_stack;
-    latest = (value_t)latest_word;
-    here   = (value_t)ram_buf;
+
+void onward_init(onward_init_t* init_data) {
+    asb    = (value_t)(init_data->arg_stack - 1);
+    asp    = (value_t)(init_data->arg_stack - 1);
+    rsb    = (value_t)(init_data->ret_stack - 1);
+    rsp    = (value_t)(init_data->ret_stack - 1);
+    here   = (value_t)(init_data->word_buf);
+    latest = (value_t)(init_data->latest);
 }
 
 value_t onward_pcfetch(void) {

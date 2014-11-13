@@ -6,6 +6,7 @@
 #define ONWARD_H
 
 #include <stdint.h>
+
 #if defined(BITS_16)
     typedef int16_t value_t;
 #elif defined(BITS_32)
@@ -31,6 +32,16 @@ typedef struct word_t {
 
 /** Type definition for the C function associated with primitive words */
 typedef void (*primitive_t)(void);
+
+typedef struct {
+    value_t* arg_stack;
+    value_t  arg_stack_sz;
+    value_t* ret_stack;
+    value_t  ret_stack_sz;
+    value_t* word_buf;
+    value_t  word_buf_sz;
+    word_t*  latest;
+} onward_init_t;
 
 #define deccode(c_name)       \
     void c_name##_code(void); \
@@ -102,6 +113,14 @@ typedef void (*primitive_t)(void);
 /** Macro to get use the word pointer in a defined word */
 #define W(name) ((value_t)&name)
 
+void onward_init(onward_init_t* init_data);
+value_t onward_pcfetch(void);
+void onward_aspush(value_t val);
+value_t onward_aspeek(value_t val);
+value_t onward_aspop(void);
+void onward_rspush(value_t val);
+value_t onward_rspop(void);
+
 decconst(VERSION);
 decconst(CELLSZ);
 decconst(BITCOUNT);
@@ -162,13 +181,5 @@ deccode(band);
 deccode(bor);
 deccode(bxor);
 deccode(bnot);
-
-value_t onward_pcfetch(void);
-void onward_aspush(value_t val);
-value_t onward_aspeek(value_t val);
-value_t onward_aspop(void);
-void onward_rspush(value_t val);
-value_t onward_rspop(void);
-void onward_init(value_t* arg_stack, value_t* ret_stack, value_t* ram_buf, word_t* latest_word);
 
 #endif /* ONWARD_H */
