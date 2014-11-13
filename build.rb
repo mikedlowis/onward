@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+require './modules/build-system/setup'
+
+#------------------------------------------------------------------------------
+# Environment Definitions
+#------------------------------------------------------------------------------
+# Define the default compiler environment
+base_env = BuildEnv.new do |env|
+  # Compiler options
+  env["CFLAGS"] += ['-DLEAK_DETECT_LEVEL=1', '--std=c99', '-Wall', '-Wextra']#, '-Werror']
+  env["CPPPATH"] += Dir['source/**/']
+end
+
+# Define the release environment
+main_env = base_env.clone do |env|
+  env["CFLAGS"] += ['-O3']
+end
+
+# Define the test environment
+test_env = base_env.clone do |env|
+  env["CPPPATH"] += Dir['modules/atf/source/**/']
+  env['CFLAGS'] +=  ['-O0']
+  if Opts[:profile].include? "coverage"
+    env['CFLAGS']  << '--coverage'
+    env['LDFLAGS'] << '--coverage'
+  end
+end
+
+#------------------------------------------------------------------------------
+# Release Build Targets
+#------------------------------------------------------------------------------
+main_env.Library('libonward.a', FileList['source/onward/*.c'])
+main_env.Program('onward', ['source/main.c', 'libonward.a'])
+
+#------------------------------------------------------------------------------
+# Test Build Targets
+#------------------------------------------------------------------------------
+if Opts[:profile].include? "test"
+    test_env.Program('onward-tests', [
+        'source/onward/onward.c',
+        'modules/atf/source/atf.c'] +
+        Dir['tests/**/*.c'])
+    test_env.Command('TESTS', [], 'CMD' => ['./onward-tests'])
+#    FileList['source/sclpl/*.c', 'build/lib/libopts.a', 'build/lib/libcds.a'])
+#  test_env.Command('RSpec', [], 'CMD' => [
+#      'rspec', '--pattern', 'spec/**{,/*/**}/*_spec.rb', '--format', 'documentation'])
+end
