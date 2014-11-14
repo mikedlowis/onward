@@ -98,6 +98,13 @@ typedef struct {
         onward_aspush(c_name);                   \
     }
 
+#define ERR_NONE              (0x00)
+#define ERR_UNKNOWN_WORD      (0x01)
+#define ERR_ARG_STACK_OVRFLW  (0x02)
+#define ERR_ARG_STACK_UNDRFLW (0x03)
+#define ERR_RET_STACK_OVRFLW  (0x04)
+#define ERR_RET_STACK_UNDRFLW (0x05)
+
 /** The number of bits that make up a stack cell */
 #define SYS_BITCOUNT ((value_t)(sizeof(value_t) * 8u))
 

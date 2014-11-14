@@ -2,6 +2,7 @@
 #include <string.h>
 
 static value_t char_oneof(char ch, char* chs);
+static void abort_on_error(value_t cond, value_t errcode);
 
 /** Version number of the implementation */
 defconst("VERSION", VERSION, 0, 0u);
@@ -27,6 +28,7 @@ defvar("pc", pc, 0, &F_IMMEDIATE_word);
 /** The address of the base of the argument stack */
 defvar("asb", asb, 0, &pc_word);
 
+/** The size of the argument stack in bytes */
 defvar("assz", assz, 0, &asb_word);
 
 /** The address of the top of the argument stack */
@@ -35,6 +37,7 @@ defvar("asp", asp, 0, &assz_word);
 /** The address of the base of the return stack */
 defvar("rsb", rsb, 0, &asp_word);
 
+/** The size of the return stack in bytes */
 defvar("rssz", rssz, 0, &rsb_word);
 
 /** The address of the top of the return stack */
@@ -145,8 +148,14 @@ defcode("find", find, &lit, 0u) {
     onward_aspush((value_t)curr);
 }
 
+defcode("abort", _abort, &find, 0u) {
+    asp = asb;
+    rsp = rsb;
+    pc  = 0u;
+}
+
 /** Execute a word */
-defcode("exec", exec, &find, 0u) {
+defcode("exec", exec, &_abort, 0u) {
     /* Load up the word to be executed, saving off the current state */
     value_t start = rsp;
     word_t* to_exec[] = { (word_t*)onward_aspop(), 0u };
@@ -167,7 +176,7 @@ defcode("exec", exec, &find, 0u) {
             onward_rspush(pc);
             pc = (value_t)current->code;
         }
-    } while(rsp != start);
+    } while(pc && rsp != start);
 }
 
 /** Create a new word definition with default attributes */
@@ -259,7 +268,7 @@ defcode("interp", interp, &zbr, 0u) {
                     comma_code();
                 }
             } else {
-                errno = 1;
+                errno = ERR_UNKNOWN_WORD;
                 (void)onward_aspop();
             }
         }
@@ -457,8 +466,10 @@ defcode("~", bnot, &bxor, 0u) {
 void onward_init(onward_init_t* init_data) {
     asb    = (value_t)(init_data->arg_stack - 1);
     asp    = (value_t)(init_data->arg_stack - 1);
+    assz   = (value_t)(init_data->arg_stack_sz * sizeof(value_t));
     rsb    = (value_t)(init_data->ret_stack - 1);
     rsp    = (value_t)(init_data->ret_stack - 1);
+    rssz   = (value_t)(init_data->ret_stack_sz * sizeof(value_t));
     here   = (value_t)(init_data->word_buf);
     latest = (value_t)(init_data->latest);
 }
@@ -471,28 +482,46 @@ value_t onward_pcfetch(void) {
 }
 
 void onward_aspush(value_t val) {
-    asp += sizeof(value_t);
-    *((value_t*)asp) = val;
+    #ifndef UNSAFE_MODE
+    if ((asp-asb) <= assz) {
+    #endif
+        asp += sizeof(value_t);
+        *((value_t*)asp) = val;
+    #ifndef UNSAFE_MODE
+    } else {
+        abort_on_error(1, ERR_ARG_STACK_OVRFLW);
+    }
+    #endif
 }
 
 value_t onward_aspeek(value_t val) {
-    return *((value_t*)(asp + (val* sizeof(value_t))));
+    return *((value_t*)(asp + (val * sizeof(value_t))));
 }
 
 value_t onward_aspop(void) {
     value_t val = *((value_t*)asp);
     asp -= sizeof(value_t);
+    abort_on_error(asp < asb, ERR_ARG_STACK_UNDRFLW);
     return val;
 }
 
 void onward_rspush(value_t val) {
-    rsp += sizeof(value_t);
-    *((value_t*)rsp) = val;
+    #ifndef UNSAFE_MODE
+    if ((rsp-rsb) <= rssz) {
+    #endif
+        rsp += sizeof(value_t);
+        *((value_t*)rsp) = val;
+    #ifndef UNSAFE_MODE
+    } else {
+        abort_on_error(1, ERR_RET_STACK_OVRFLW);
+    }
+    #endif
 }
 
 value_t onward_rspop(void) {
     value_t val = *((value_t*)rsp);
     rsp -= sizeof(value_t);
+    abort_on_error(rsp < rsb, ERR_RET_STACK_UNDRFLW);
     return val;
 }
 
@@ -508,3 +537,11 @@ static value_t char_oneof(char ch, char* chs) {
     return ret;
 }
 
+static void abort_on_error(value_t cond, value_t errcode) {
+    #ifndef UNSAFE_MODE
+    if(cond) {
+        errno = errcode;
+        _abort_code();
+    }
+    #endif
+}
