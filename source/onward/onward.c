@@ -194,15 +194,16 @@ defcode("create", create, &exec, 0u) {
     ((word_t*)here)->name  = name;
     ((word_t*)here)->code  = (value_t*)(((word_t*)here) + 1);
     /* Update latest and here variables and initialize the code array */
-    latest = here;
-    here   = (value_t)(((word_t*)here) + 1);
+    latest  = here;
+    here   += sizeof(word_t);
     *((value_t*)here) = 0u;
 }
 
 /** Append a word to the latest word definition */
 defcode(",", comma, &create, 0u) {
-    *((value_t*)here++) = onward_aspop();
-    *((value_t*)here)   = 0u;
+    *((value_t*)here)  = onward_aspop();
+    here              += sizeof(value_t);
+    *((value_t*)here)  = 0u;
 }
 
 /** Set the interpreter mode to "interpret" */
