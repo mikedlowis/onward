@@ -120,6 +120,9 @@ typedef struct {
 /** Macro to get use the word pointer in a defined word */
 #define W(name) ((value_t)&name)
 
+/** Macro that expands to the address of the latest built-in word */
+#define LATEST_BUILTIN (&bnot)
+
 void onward_init(onward_init_t* init_data);
 value_t onward_pcfetch(void);
 void onward_aspush(value_t val);

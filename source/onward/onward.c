@@ -76,7 +76,7 @@ defcode("word", word, &here_word, 0u) {
 
 /** Ignore the rest of a given line of input */
 defcode("\\", dropline, &word, F_IMMEDIATE_MSK) {
-    input = (char*)"";
+    input = (intptr_t)"";
 }
 
 /** Parses a string as a number literal */
@@ -213,7 +213,7 @@ defcode(",", comma, &create, 0u) {
 }
 
 /** Set the interpreter mode to "interpret" */
-defcode("[", lbrack, &comma, 0u) {
+defcode("[", lbrack, &comma, F_IMMEDIATE_MSK) {
     state = 0;
 }
 
@@ -262,7 +262,7 @@ defcode("interp", interp, &zbr, 0u) {
         if (onward_aspop()) {
             /* If we're compiling, then append the number to the word */
             if (state == 1) {
-                onward_aspush(&lit);
+                onward_aspush((intptr_t)&lit);
                 comma_code();
                 comma_code();
             }
