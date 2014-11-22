@@ -74,8 +74,13 @@ defcode("word", word, &here_word, 0u) {
     onward_aspush((value_t)buffer);
 }
 
+/** Ignore the rest of a given line of input */
+defcode("\\", dropline, &word, F_IMMEDIATE_MSK) {
+    input = (char*)"";
+}
+
 /** Parses a string as a number literal */
-defcode("num", num, &word, 0u) {
+defcode("num", num, &dropline, 0u) {
     char* word = (char*)onward_aspop();
     char* start = word;
     value_t success = 0;
@@ -148,6 +153,7 @@ defcode("find", find, &lit, 0u) {
     onward_aspush((value_t)curr);
 }
 
+/** Abort an executing operation as gracefully as possible */
 defcode("abort", _abort, &find, 0u) {
     asp = asb;
     rsp = rsb;
@@ -301,27 +307,32 @@ defcode("!", store, &fetch, 0u) {
     *((value_t*)onward_aspop()) = onward_aspop();
 }
 
+/** Add the given ammount to the value at the given location */
 defcode("+!", add_store, &store, 0u) {
     *((value_t*)onward_aspop()) += onward_aspop();
 }
 
+/** Subtract the given ammount from the value at the given location */
 defcode("-!", sub_store, &add_store, 0u) {
     *((value_t*)onward_aspop()) -= onward_aspop();
 }
 
+/** Fetch a byte from the given location */
 defcode("b@", byte_fetch, &sub_store, 0u) {
     onward_aspush( (value_t)*((char*)onward_aspop()) );
 }
 
+/** Store a byte in an address at the given location */
 defcode("b!", byte_store, &byte_fetch, 0u) {
     *((char*)onward_aspop()) = (char)onward_aspop();
 }
 
+/** Copy a block of memory to a new location */
 defcode("bmove", block_copy, &byte_store, 0u) {
     size_t length = (size_t)onward_aspop();
     void*  dest   = (void*)onward_aspop();
     void*  source = (void*)onward_aspop();
-    memcpy(dest, source, length);
+    memmove(dest, source, length);
 }
 
 /* Common Stack Manipulation Words
@@ -378,30 +389,35 @@ defcode("-rot", nrot, &rot, 0u) {
 
 /* Arithmetic Words
  *****************************************************************************/
+/** Add the top two items on the stack */
 defcode("+", add, &nrot, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval + rval);
 }
 
+/** Subtract the top two items on the stack */
 defcode("-", sub, &add, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval - rval);
 }
 
+/** Multiply the top two items on the stack */
 defcode("*", mul, &sub, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval * rval);
 }
 
+/** Divide the top two items on the stack */
 defcode("/", divide, &mul, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval / rval);
 }
 
+/** Modulo the top two items on the stack */
 defcode("%", mod, &divide, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
@@ -410,36 +426,42 @@ defcode("%", mod, &divide, 0u) {
 
 /* Boolean Logic Words
  *****************************************************************************/
+/** Test if the top two items on the stack are equal */
 defcode("=", eq, &mod, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval == rval);
 }
 
+/** Test if the top two items on the stack are not equal */
 defcode("<>", ne, &eq, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval != rval);
 }
 
+/** Test if the second item is less than the first item */
 defcode("<", lt, &ne, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval < rval);
 }
 
+/** Test if the second item is greater than the first item */
 defcode(">", gt, &lt, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval > rval);
 }
 
+/** Test if the second item is less than or equal to the first item */
 defcode("<=", lte, &gt, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval <= rval);
 }
 
+/** Test if the second item is greater than or equal to the first item */
 defcode(">=", gte, &lte, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
@@ -448,24 +470,28 @@ defcode(">=", gte, &lte, 0u) {
 
 /* Bitwise Operation Words
  *****************************************************************************/
+/** Bitwise AND the top two items */
 defcode("&", band, &gte, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval & rval);
 }
 
+/** Bitwise OR the top two items */
 defcode("|", bor, &band, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval | rval);
 }
 
+/** Bitwise XOR the top two items */
 defcode("^", bxor, &bor, 0u) {
     value_t rval = onward_aspop();
     value_t lval = onward_aspop();
     onward_aspush(lval ^ rval);
 }
 
+/** Bitwise NOT the top two items */
 defcode("~", bnot, &bxor, 0u) {
     onward_aspush(~onward_aspop());
 }
