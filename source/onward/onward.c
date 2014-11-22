@@ -252,8 +252,16 @@ defcode("interp", interp, &zbr, 0u) {
     if (strlen((char*)onward_aspeek(0)) > 0) {
         /* Try to parse it as a number */
         num_code();
-        /* If it's not a number */
-        if (!onward_aspop()) {
+        /* If it's a number */
+        if (onward_aspop()) {
+            /* If we're compiling, then append the number to the word */
+            if (state == 1) {
+                onward_aspush(&lit);
+                comma_code();
+                comma_code();
+            }
+        /* otherwise, look it up */
+        } else {
             /* Lookup the word in the dictionary */
             find_code();
             /* If we found a definition execute it */
@@ -268,6 +276,7 @@ defcode("interp", interp, &zbr, 0u) {
                 {
                     comma_code();
                 }
+            /* Report an error */
             } else {
                 errno = ERR_UNKNOWN_WORD;
                 (void)onward_aspop();
