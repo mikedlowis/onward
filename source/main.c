@@ -19,8 +19,11 @@ defcode("dumpw", dumpw, LATEST_BUILTIN, 0u) {
         printf("code:");
         word_t** code = (word_t**)word->code;
         while(*code) {
-            printf("\t%s\n", (*code)->name);
+            printf("\t%s", (*code)->name);
+            if (*code == &lit)
+                printf(" %zd", (intptr_t)*(++code));
             code++;
+            puts("");
         }
         printf("\tret\n");
     }
