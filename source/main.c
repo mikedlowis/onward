@@ -45,10 +45,29 @@ void print_stack(void) {
     puts(!errno ? "OK." : "?");
 }
 
-int main(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
+void parse(FILE* file) {
+    if (file == stdin)
+        printf(":> ");
+    while(0 != (input = (value_t)fgets(Input_Line, 1024u, file))) {
+        errno = 0;
+        while (*((char*)input) != '\0')
+            interp_code();
+        if (file == stdin) {
+            print_stack();
+            printf(state ? ".. " : ":> ");
+        }
+    }
+}
 
+void parse_file(char* fname) {
+    FILE* file = fopen(fname, "r");
+    parse(file);
+    fclose(file);
+}
+
+int main(int argc, char** argv) {
+    int i;
+    /* Initialize the system */
     onward_init_t init_data = {
         Arg_Stack_Buf,
         STACK_SZ,
@@ -59,16 +78,11 @@ int main(int argc, char** argv) {
         (word_t*)&dumpw
     };
     onward_init(&init_data);
-
-    printf(":> ");
-    while(0 != (input = (value_t)fgets(Input_Line, 1024u, stdin))) {
-        errno = 0;
-        while (*((char*)input) != '\0')
-            interp_code();
-        print_stack();
-        printf(state ? ".. " : ":> ");
-    }
-
+    /* Load any dictionaries specified on the  command line */
+    for (i = 1; i < argc; i++)
+        parse_file(argv[i]);
+    /* Start the REPL */
+    parse(stdin);
     return 0;
 }
 
