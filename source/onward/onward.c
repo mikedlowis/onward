@@ -243,14 +243,16 @@ defcode("'", tick, &semicolon, 0u) {
 
 /** Branch unconditionally to the offset specified by the next instruction */
 defcode("br", br, &tick, 0u) {
-    pc += (*((value_t*)pc) * sizeof(value_t));
+    pc += *((value_t*)pc);
 }
 
 /** Branch to the offset specified by the next instruction if the top item on
  * the stack is 0 */
 defcode("0br", zbr, &br, 0u) {
     if (!onward_aspop())
-        pc += (*((value_t*)pc) * sizeof(value_t));
+        pc += *((value_t*)pc);
+    else
+        pc += sizeof(intptr_t);
 }
 
 /** Take the input string, tokenize it, and execute or compile each word */

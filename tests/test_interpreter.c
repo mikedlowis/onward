@@ -308,6 +308,22 @@ TEST_SUITE(Interpreter) {
     //-------------------------------------------------------------------------
     // Testing: :
     //-------------------------------------------------------------------------
+    TEST(Verify_colon_creates_a_new_word_and_switches_to_compile_mode)
+    {
+        state_reset();
+        input = (intptr_t)" foo ";
+        onward_aspush((intptr_t)&colon);
+        ((primitive_t)exec.code)();
+        word_t* old_word = (word_t*)latest;
+        onward_aspush((intptr_t)"foo");
+        ((primitive_t)create.code)();
+        word_t* new_word = (word_t*)latest;
+        CHECK(F_HIDDEN_MSK == new_word->flags);
+        CHECK((intptr_t*)here == new_word->code);
+        CHECK(old_word == new_word->link);
+        CHECK(0 == *(intptr_t*)here);
+        CHECK(1 == state);
+    }
 
     //-------------------------------------------------------------------------
     // Testing: '
@@ -324,10 +340,37 @@ TEST_SUITE(Interpreter) {
     //-------------------------------------------------------------------------
     // Testing: br
     //-------------------------------------------------------------------------
+    TEST(Verify_br_adds_the_offset_to_the_program_counter_uncoditionally)
+    {
+        state_reset();
+        intptr_t code[] = { sizeof(intptr_t)*2, 0, 0 };
+        pc = (intptr_t)code;
+        ((primitive_t)br.code)();
+        CHECK((intptr_t)&code[2] == pc);
+    }
 
     //-------------------------------------------------------------------------
     // Testing: 0br
     //-------------------------------------------------------------------------
+    TEST(Verify_br0_adds_the_offset_to_the_program_counter_if_the_top_of_the_stack_is_zero)
+    {
+        state_reset();
+        intptr_t code[] = { sizeof(intptr_t)*2, 0, 0 };
+        pc = (intptr_t)code;
+        onward_aspush(0);
+        ((primitive_t)zbr.code)();
+        CHECK((intptr_t)&code[2] == pc);
+    }
+
+    TEST(Verify_br0_should_skip_past_the_branch_offset_if_top_of_the_stack_is_non_zero)
+    {
+        state_reset();
+        intptr_t code[] = { sizeof(intptr_t)*2, 0, 0 };
+        pc = (intptr_t)code;
+        onward_aspush(1);
+        ((primitive_t)zbr.code)();
+        CHECK((intptr_t)&code[1] == pc);
+    }
 
     //-------------------------------------------------------------------------
     // Testing: interp

@@ -18,6 +18,7 @@ void state_reset(void) {
     };
     onward_init(&init_data);
     errno = 0;
+    state = 0;
 }
 
 int main(int argc, char** argv)
