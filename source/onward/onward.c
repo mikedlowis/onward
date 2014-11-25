@@ -102,6 +102,9 @@ defcode("num", num, &dropline, 0u) {
             case 'o': base = 8;  break;
             case 'd': base = 10; break;
             case 'x': base = 16; break;
+            case '\0':
+                success = 1;
+                value = 0;
             default:  base = -1; break;
         }
     }

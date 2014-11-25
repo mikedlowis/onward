@@ -37,7 +37,7 @@ unless Opts[:profile].include? "no-tests"
       'source/onward/onward.c',
       'modules/atf/source/atf.c'] +
       Dir['tests/**/*.c'])
-  test_env.Command('TESTS', [], 'CMD' => ['./onward-tests'])
+  test_env.Command('Unit Tests', ['./onward-tests'], 'CMD' => ['./onward-tests'])
 end
 
 #------------------------------------------------------------------------------

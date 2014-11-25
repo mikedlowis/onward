@@ -148,6 +148,7 @@ decvar(latest);
 decvar(state);
 decvar(here);
 deccode(word);
+deccode(dropline);
 deccode(num);
 deccode(lit);
 deccode(find);

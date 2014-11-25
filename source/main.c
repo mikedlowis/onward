@@ -4,7 +4,7 @@
 #define STACK_SZ (64u)
 value_t Arg_Stack_Buf[STACK_SZ];
 value_t Ret_Stack_Buf[STACK_SZ];
-char     Input_Line[1024];
+char    Input_Line[1024];
 value_t Ram_Data_Buf[8192/sizeof(value_t)];
 
 defcode("dumpw", dumpw, LATEST_BUILTIN, 0u) {
@@ -42,6 +42,7 @@ void print_stack(void) {
             printf("%zd ", *curr);
     }
     puts(")");
+    printf("errno: %zd\n", errno);
     puts(!errno ? "OK." : "?");
 }
 
@@ -61,8 +62,10 @@ void parse(FILE* file) {
 
 void parse_file(char* fname) {
     FILE* file = fopen(fname, "r");
-    parse(file);
-    fclose(file);
+    if (file) {
+        parse(file);
+        fclose(file);
+    }
 }
 
 int main(int argc, char** argv) {

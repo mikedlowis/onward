@@ -1,0 +1,31 @@
+
+: immediate
+    latest @        \ Get the latest word
+    CELLSZ +        \ Add offset to get to the flags field
+    dup @           \ Fetch the current value
+    F_IMMEDIATE | ! \ Set the immediate bit
+; immediate
+
+\ : if immediate
+\     ' 0br , \ compile 0branch
+\     here @  \ save location of the offset on the stack
+\     0 ,     \ compile a dummy offset
+\ ;
+\
+\ : then immediate
+\     dup
+\     here @ swap -   \ calculate the offset from the address saved on the stack
+\     swap !          \ store the offset in the back-filled location
+\ ;
+\
+\ : else immediate
+\     ' br ,          \ definite branch to just over the false-part
+\     here @          \ save location of the offset on the stack
+\     0 ,             \ compile a dummy offset
+\     swap            \ now back-fill the original (if) offset
+\     dup             \ same as for then word above
+\     here @ swap -
+\     swap !
+\ ;
+
+
