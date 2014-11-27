@@ -11,7 +11,7 @@ defconst("VERSION", VERSION, 0, 0u);
 defconst("CELLSZ", CELLSZ, sizeof(value_t), &VERSION_word);
 
 /** Number of bits that make up a stack cell */
-defconst("BITCOUNT", BITCOUNT, SYS_BITCOUNT, &VERSION_word);
+defconst("BITCOUNT", BITCOUNT, SYS_BITCOUNT, &CELLSZ_word);
 
 /** Bit mask to retrieve the "primitive" flag */
 defconst("F_PRIMITIVE", F_PRIMITIVE, F_PRIMITIVE_MSK, &BITCOUNT_word);
@@ -233,6 +233,7 @@ defword(":", colon, &rbrack, 0u) {
 /** Start a new word definition */
 defcode(";", semicolon, &colon, F_IMMEDIATE_MSK) {
     ((word_t*)latest)->flags &= ~F_HIDDEN;
+    here += sizeof(value_t);
     state = 0;
 }
 

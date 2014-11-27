@@ -1,5 +1,6 @@
 #include "onward.h"
 #include <stdio.h>
+#include "syscall.h"
 
 #define STACK_SZ (64u)
 value_t Arg_Stack_Buf[STACK_SZ];
@@ -28,6 +29,14 @@ defcode("dumpw", dumpw, LATEST_BUILTIN, 0u) {
         printf("\tret\n");
     }
 }
+
+defcode("syscall", syscall, &dumpw, 0u) {
+    System_Calls[onward_aspop()]();
+}
+
+defvar("infile",  infile,  0u, &syscall);
+defvar("outfile", outfile, 0u, &infile_word);
+defvar("errfile", errfile, 0u, &outfile_word);
 
 void print_stack(void) {
     value_t* base = (value_t*)asb;
@@ -78,7 +87,7 @@ int main(int argc, char** argv) {
         STACK_SZ,
         Ram_Data_Buf,
         8192/sizeof(value_t),
-        (word_t*)&dumpw
+        (word_t*)&errfile_word
     };
     onward_init(&init_data);
     /* Load any dictionaries specified on the  command line */

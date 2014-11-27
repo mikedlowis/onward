@@ -35,6 +35,7 @@ end
 unless Opts[:profile].include? "no-tests"
   test_env.Program('onward-tests', [
       'source/onward/onward.c',
+      'source/syscall.c',
       'modules/atf/source/atf.c'] +
       Dir['tests/**/*.c'])
   test_env.Command('Unit Tests', ['./onward-tests'], 'CMD' => ['./onward-tests'])

@@ -1,4 +1,3 @@
-
 : immediate
     latest @        \ Get the latest word
     CELLSZ +        \ Add offset to get to the flags field
@@ -6,26 +5,72 @@
     F_IMMEDIATE | ! \ Set the immediate bit
 ; immediate
 
-\ : if immediate
-\     ' 0br , \ compile 0branch
-\     here @  \ save location of the offset on the stack
-\     0 ,     \ compile a dummy offset
-\ ;
-\
-\ : then immediate
-\     dup
-\     here @ swap -   \ calculate the offset from the address saved on the stack
-\     swap !          \ store the offset in the back-filled location
-\ ;
-\
-\ : else immediate
-\     ' br ,          \ definite branch to just over the false-part
-\     here @          \ save location of the offset on the stack
-\     0 ,             \ compile a dummy offset
-\     swap            \ now back-fill the original (if) offset
-\     dup             \ same as for then word above
-\     here @ swap -
-\     swap !
-\ ;
 
+: [compile] immediate
+    word find ,
+;
+
+: #  [compile] \ ;
+
+: #! [compile] \ ;
+
+: recurse immediate
+    latest @ ,
+;
+
+: if immediate
+   ' 0br , \ compile 0branch
+   here @  \ save location of the offset on the stack
+   0 ,     \ compile a dummy offset
+;
+
+: then immediate
+    dup
+    here @ swap -   \ calculate the offset from the address saved on the stack
+    !
+;
+
+: else immediate
+    ' br ,          \ definite branch to just over the false-part
+    here @          \ save location of the offset on the stack
+    0 ,             \ compile a dummy offset
+    swap            \ now back-fill the original (if) offset
+    dup             \ same as for then word above
+    here @ swap -   \ calculate the offset from the address saved on the stack
+    !
+;
+
+: begin immediate here @ ;
+
+: until immediate
+    ' 0br ,   \ compile 0BRANCH
+    here @ -  \ calculate the offset from the address saved on the stack
+    ,         \ compile the offset here
+;
+
+: again immediate
+    ' br ,   \ compile branch
+    here @ - \ calculate the offset back
+    ,        \ compile the offset here
+;
+
+: while immediate
+    ' 0br , \ compile 0branch
+    here @  \ save location of the offset2 on the stack
+    0 ,     \ compile a dummy offset2
+;
+
+: repeat immediate
+    ' br ,         \ compile branch
+    swap           \ get the original offset (from begin)
+    here @ - ,     \ and compile it after branch
+    dup
+    here @ swap -  \ calculate the offset2
+    !              \ and back-fill it in the original location
+;
+
+: unless immediate
+    ' not ,         \ compile not (to reverse the test)
+    [compile] if    \ continue by calling the normal if
+;
 
