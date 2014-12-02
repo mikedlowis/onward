@@ -34,8 +34,7 @@ end
 #------------------------------------------------------------------------------
 unless Opts[:profile].include? "no-tests"
   test_env.Program('onward-tests', [
-      'source/onward/onward.c',
-      'source/syscall.c',
+      'source/onward.c',
       'modules/atf/source/atf.c'] +
       Dir['tests/**/*.c'])
   test_env.Command('Unit Tests', ['./onward-tests'], 'CMD' => ['./onward-tests'])
@@ -44,6 +43,7 @@ end
 #------------------------------------------------------------------------------
 # Release Build Targets
 #------------------------------------------------------------------------------
-main_env.Library('libonward.a', FileList['source/onward/*.c'])
-main_env.Program('onward', ['source/main.c', 'libonward.a'])
+main_env.Library('libonward.a', FileList['source/*.c'])
+main_env.Program('onward', FileList['source/*.c'],
+                 'CFLAGS' => main_env['CFLAGS'] + ['-DSTANDALONE'])
 
