@@ -651,14 +651,17 @@ static syscall_fn_t System_Calls[7] = {
 #ifdef STANDALONE
 #include <stdbool.h>
 
+static bool Newline_Consumed = false;
+value_t Argument_Stack[ARG_STACK_SZ];
+value_t Return_Stack[RET_STACK_SZ];
+value_t Word_Buffer[WORD_BUF_SZ];
+
 defvar("infile",  infile,  0u, LATEST_BUILTIN);
 defvar("outfile", outfile, 0u, &infile_word);
 defvar("errfile", errfile, 0u, &outfile_word);
 defcode("syscall", syscall, &errfile_word, 0u) {
     System_Calls[onward_aspop()]();
 }
-
-static bool Newline_Consumed = false;
 
 value_t fetch_char(void)
 {

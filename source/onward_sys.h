@@ -21,11 +21,11 @@
 #define WORD_BUF_SZ (8192 / sizeof(value_t))
 #endif
 
-value_t Argument_Stack[ARG_STACK_SZ];
+extern value_t Argument_Stack[ARG_STACK_SZ];
 
-value_t Return_Stack[RET_STACK_SZ];
+extern value_t Return_Stack[RET_STACK_SZ];
 
-value_t Word_Buffer[WORD_BUF_SZ];
+extern value_t Word_Buffer[WORD_BUF_SZ];
 
 value_t fetch_char(void);
 

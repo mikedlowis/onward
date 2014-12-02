@@ -1,8 +1,11 @@
 #include "atf.h"
 #include "onward.h"
+#include "onward_sys.h"
 
 char* input = "";
-value_t Word_Buffer[1024 / sizeof(value_t)];
+value_t Argument_Stack[ARG_STACK_SZ];
+value_t Return_Stack[RET_STACK_SZ];
+value_t Word_Buffer[WORD_BUF_SZ];
 
 value_t fetch_char(void)
 {
