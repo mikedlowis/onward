@@ -4,6 +4,8 @@
 // File To Test
 #include "onward.h"
 
+extern char* input;
+
 void state_reset(void);
 
 static intptr_t get_const(const word_t* word) {
@@ -39,8 +41,7 @@ TEST_SUITE(Constants_And_Variables) {
         CHECK(is_var(&asp, &asp_word));
         CHECK(is_var(&rsb, &rsb_word));
         CHECK(is_var(&rsp, &rsp_word));
-        CHECK(is_var(&input, &input_word));
-        CHECK(is_var(&errno, &errno_word));
+    //    CHECK(is_var(&errcode, &errcode_word));
         CHECK(is_var(&latest, &latest_word));
         CHECK(is_var(&state, &state_word));
         CHECK(is_var(&here, &here_word));

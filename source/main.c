@@ -1,12 +1,8 @@
-#include "onward.h"
-#include <stdio.h>
+#include "onward_sys.h"
 #include "syscall.h"
-
-#define STACK_SZ (64u)
-value_t Arg_Stack_Buf[STACK_SZ];
-value_t Ret_Stack_Buf[STACK_SZ];
-char    Input_Line[1024];
-value_t Ram_Data_Buf[8192/sizeof(value_t)];
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 defcode("dumpw", dumpw, LATEST_BUILTIN, 0u) {
     word_t* word = (word_t*)onward_aspop();
@@ -21,7 +17,7 @@ defcode("dumpw", dumpw, LATEST_BUILTIN, 0u) {
         word_t** code = (word_t**)word->code;
         while(*code) {
             printf("\t%s", (*code)->name);
-            if (*code == &lit)
+            if ((*code == &lit) || (*code == &zbr) || (*code == &br))
                 printf(" %zd", (intptr_t)*(++code));
             code++;
             puts("");
@@ -38,11 +34,27 @@ defvar("infile",  infile,  0u, &syscall);
 defvar("outfile", outfile, 0u, &infile_word);
 defvar("errfile", errfile, 0u, &outfile_word);
 
+/*****************************************************************************/
+bool Newline_Consumed = false;
+
+value_t fetch_char(void)
+{
+    value_t ch = (value_t)fgetc((FILE*)infile);
+    if ((char)ch == '\n')
+        Newline_Consumed = true;
+    return ch;
+}
+
+void emit_char(value_t val)
+{
+    fputc((int)val, (FILE*)outfile);
+}
+
 void print_stack(void) {
     value_t* base = (value_t*)asb;
     value_t* top  = (value_t*)asp;
-    int i;
     printf("( ");
+    int i;
     if (top-5 >= base)
         printf("... ");
     for (i = 4; i >= 0; i--) {
@@ -51,22 +63,25 @@ void print_stack(void) {
             printf("%zd ", *curr);
     }
     puts(")");
-    printf("errno: %zd\n", errno);
-    puts(!errno ? "OK." : "?");
+    printf("errcode: %zd\n", errcode);
+    puts(!errcode ? "OK." : "?");
 }
 
 void parse(FILE* file) {
+    value_t old = infile;
+    infile = (value_t)file;
     if (file == stdin)
         printf(":> ");
-    while(0 != (input = (value_t)fgets(Input_Line, 1024u, file))) {
-        errno = 0;
-        while (*((char*)input) != '\0')
-            interp_code();
-        if (file == stdin) {
+    while (!feof(file)) {
+        interp_code();
+        if ((file == stdin) && Newline_Consumed) {
             print_stack();
-            printf(state ? ".. " : ":> ");
+            printf(":> ");
+            Newline_Consumed = false;
+            errcode = 0;
         }
     }
+    infile = old;
 }
 
 void parse_file(char* fname) {
@@ -79,17 +94,11 @@ void parse_file(char* fname) {
 
 int main(int argc, char** argv) {
     int i;
-    /* Initialize the system */
-    onward_init_t init_data = {
-        Arg_Stack_Buf,
-        STACK_SZ,
-        Ret_Stack_Buf,
-        STACK_SZ,
-        Ram_Data_Buf,
-        8192/sizeof(value_t),
-        (word_t*)&errfile_word
-    };
-    onward_init(&init_data);
+    /* Initialize implementation specific words */
+    latest  = (value_t)&errfile_word;
+    infile  = (value_t)stdin;
+    outfile = (value_t)stdout;
+    errfile = (value_t)stderr;
     /* Load any dictionaries specified on the  command line */
     for (i = 1; i < argc; i++)
         parse_file(argv[i]);

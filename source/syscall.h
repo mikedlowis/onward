@@ -9,6 +9,6 @@
 
 typedef void (*syscall_fn_t)(void);
 
-syscall_fn_t System_Calls[];
+syscall_fn_t System_Calls[7];
 
 #endif /* SYCALL_H */

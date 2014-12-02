@@ -1,17 +1,15 @@
 : immediate
-    latest @        \ Get the latest word
-    CELLSZ +        \ Add offset to get to the flags field
-    dup @           \ Fetch the current value
-    F_IMMEDIATE | ! \ Set the immediate bit
+   latest @        \ Get the latest word
+   CELLSZ +        \ Add offset to get to the flags field
+   dup @           \ Fetch the current value
+   F_IMMEDIATE | ! \ Set the immediate bit
 ; immediate
-
 
 : [compile] immediate
     word find ,
 ;
 
 : #  [compile] \ ;
-
 : #! [compile] \ ;
 
 : recurse immediate

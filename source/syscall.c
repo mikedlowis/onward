@@ -60,7 +60,7 @@ void syscall_free(void)
     free((void*)onward_aspop());
 }
 
-syscall_fn_t System_Calls[] = {
+syscall_fn_t System_Calls[7] = {
     /* File Operations */
     &syscall_open,
     &syscall_close,

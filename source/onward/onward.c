@@ -1,5 +1,7 @@
 #include "onward.h"
+#include "onward_sys.h"
 #include <string.h>
+#include <stdio.h>
 
 static value_t char_oneof(char ch, char* chs);
 static void abort_on_error(value_t cond, value_t errcode);
@@ -26,61 +28,78 @@ defconst("F_IMMEDIATE", F_IMMEDIATE, F_IMMEDIATE_MSK, &F_HIDDEN_word);
 defvar("pc", pc, 0, &F_IMMEDIATE_word);
 
 /** The address of the base of the argument stack */
-defvar("asb", asb, 0, &pc_word);
+defvar("asb", asb, (value_t)Argument_Stack-1, &pc_word);
 
 /** The size of the argument stack in bytes */
-defvar("assz", assz, 0, &asb_word);
+defvar("assz", assz, ARG_STACK_SZ, &asb_word);
 
 /** The address of the top of the argument stack */
-defvar("asp", asp, 0, &assz_word);
+defvar("asp", asp, (value_t)Argument_Stack-1, &assz_word);
 
 /** The address of the base of the return stack */
-defvar("rsb", rsb, 0, &asp_word);
+defvar("rsb", rsb, (value_t)Return_Stack-1, &asp_word);
 
 /** The size of the return stack in bytes */
-defvar("rssz", rssz, 0, &rsb_word);
+defvar("rssz", rssz, RET_STACK_SZ, &rsb_word);
 
 /** The address of the top of the return stack */
-defvar("rsp", rsp, 0, &rssz_word);
-
-/** The address of the current input string */
-defvar("input", input, 0, &rsp_word);
+defvar("rsp", rsp, (value_t)Return_Stack-1, &rssz_word);
 
 /** The last generated error code */
-defvar("errno", errno, 0, &input_word);
+defvar("errno", errno, 0, &rsp_word);
 
 /** Address of the most recently defined word */
-defvar("latest", latest, 0, &errno_word);
+defvar("latest", latest, (value_t)LATEST_BUILTIN, &errno_word);
 
 /** The current state of the interpreter */
 defvar("state", state, 0, &latest_word);
 
 /** The address where the next word or instruction will be written */
-defvar("here", here, 0, &state_word);
+defvar("here", here, (value_t)Word_Buffer, &state_word);
+
+/** Read a character from the default input source */
+defcode("key", key, &here_word, 0u) {
+    onward_aspush(fetch_char());
+}
+
+/** Read a character from the default input source */
+defcode("emit", emit, &key, 0u) {
+    emit_char((int)onward_aspop());
+}
+
+/** Drop the rest of the current line from the default input source */
+defcode("\\", dropline, &emit, F_IMMEDIATE_MSK) {
+    int curr;
+    do {
+        ((primitive_t)key.code)();
+        curr = (int)onward_aspop();
+    } while(((char)curr != '\n') && (curr != EOF));
+}
 
 /** Fetches the next word from the input string */
-defcode("word", word, &here_word, 0u) {
+defcode("word", word, &dropline, 0u) {
     static char buffer[32u];
     char* str = buffer;
+    int curr;
     /* Skip any whitespace */
-    while(char_oneof(*((char*)input), " \t\r\n"))
-        input++;
+    do {
+        key_code();
+        curr = (int)onward_aspop();
+    } while (char_oneof((char)curr, " \t\r\n"));
     /* Copy characters into the buffer */
-    while((*((char*)input) != '\0') && !char_oneof(*((char*)input), " \t\r\n"))
-        *(str++) = *((char*)input++);
+    do {
+        *str++ = (char)curr;
+        key_code();
+        curr = (int)onward_aspop();
+    } while(((int)curr != EOF) && !char_oneof((char)curr, " \t\r\n"));
     /* Terminate the string */
     *str = '\0';
     /* Return the internal buffer */
     onward_aspush((value_t)buffer);
 }
 
-/** Ignore the rest of a given line of input */
-defcode("\\", dropline, &word, F_IMMEDIATE_MSK) {
-    input = (intptr_t)"";
-}
-
 /** Parses a string as a number literal */
-defcode("num", num, &dropline, 0u) {
+defcode("num", num, &word, 0u) {
     char* word = (char*)onward_aspop();
     char* start = word;
     value_t success = 0;
@@ -504,17 +523,6 @@ defcode("~", bnot, &bxor, 0u) {
 
 /* Helper C Functions
  *****************************************************************************/
-
-void onward_init(onward_init_t* init_data) {
-    asb    = (value_t)(init_data->arg_stack - 1);
-    asp    = (value_t)(init_data->arg_stack - 1);
-    assz   = (value_t)(init_data->arg_stack_sz * sizeof(value_t));
-    rsb    = (value_t)(init_data->ret_stack - 1);
-    rsp    = (value_t)(init_data->ret_stack - 1);
-    rssz   = (value_t)(init_data->ret_stack_sz * sizeof(value_t));
-    here   = (value_t)(init_data->word_buf);
-    latest = (value_t)(init_data->latest);
-}
 
 value_t onward_pcfetch(void) {
     value_t* reg = (value_t*)pc;

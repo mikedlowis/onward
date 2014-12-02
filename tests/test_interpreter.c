@@ -5,6 +5,8 @@
 // File To Test
 #include "onward.h"
 
+extern char* input;
+
 void state_reset(void);
 
 //-----------------------------------------------------------------------------
@@ -17,7 +19,7 @@ TEST_SUITE(Interpreter) {
     TEST(Verify_word_reads_the_next_word_and_places_it_on_the_stack)
     {
         state_reset();
-        input = (intptr_t)" foo ";
+        input = " foo ";
         ((primitive_t)word.code)();
         char* result = (char*)onward_aspop();
         CHECK(0 == strcmp(result, "foo"));
@@ -29,7 +31,7 @@ TEST_SUITE(Interpreter) {
     TEST(Verify_dropline_drops_the_rest_of_the_given_input)
     {
         state_reset();
-        input = (intptr_t)" foo ";
+        input = " foo \n\0";
         ((primitive_t)dropline.code)();
         CHECK(0 == strcmp((char*)input, ""));
     }
@@ -308,10 +310,11 @@ TEST_SUITE(Interpreter) {
     //-------------------------------------------------------------------------
     // Testing: :
     //-------------------------------------------------------------------------
+#if 1
     TEST(Verify_colon_creates_a_new_word_and_switches_to_compile_mode)
     {
         state_reset();
-        input = (intptr_t)" foo ";
+        input = " foo ";
         onward_aspush((intptr_t)&colon);
         ((primitive_t)exec.code)();
         word_t* old_word = (word_t*)latest;
@@ -324,10 +327,12 @@ TEST_SUITE(Interpreter) {
         CHECK(0 == *(intptr_t*)here);
         CHECK(1 == state);
     }
+#endif
 
     //-------------------------------------------------------------------------
     // Testing: '
     //-------------------------------------------------------------------------
+#if 1
     TEST(Verify_tick_fetches_next_instruction_and_places_it_on_the_stack)
     {
         state_reset();
@@ -371,6 +376,7 @@ TEST_SUITE(Interpreter) {
         ((primitive_t)zbr.code)();
         CHECK((intptr_t)&code[1] == pc);
     }
+#endif
 
     //-------------------------------------------------------------------------
     // Testing: interp

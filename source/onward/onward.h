@@ -123,7 +123,6 @@ typedef struct {
 /** Macro that expands to the address of the latest built-in word */
 #define LATEST_BUILTIN (&bnot)
 
-void onward_init(onward_init_t* init_data);
 value_t onward_pcfetch(void);
 void onward_aspush(value_t val);
 value_t onward_aspeek(value_t val);
@@ -142,11 +141,12 @@ decvar(asb);
 decvar(asp);
 decvar(rsb);
 decvar(rsp);
-decvar(input);
-decvar(errno);
+decvar(errcode);
 decvar(latest);
 decvar(state);
 decvar(here);
+deccode(key);
+deccode(emit);
 deccode(word);
 deccode(dropline);
 deccode(num);
