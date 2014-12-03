@@ -18,7 +18,7 @@
 #endif
 
 #ifndef WORD_BUF_SZ
-#define WORD_BUF_SZ (8192 / sizeof(value_t))
+#define WORD_BUF_SZ (256 * sizeof(value_t))
 #endif
 
 extern value_t Argument_Stack[ARG_STACK_SZ];

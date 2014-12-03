@@ -44,20 +44,24 @@ defvar("rssz", rssz, RET_STACK_SZ, &rsb_word);
 /** The address of the top of the return stack */
 defvar("rsp", rsp, (value_t)Return_Stack-1, &rssz_word);
 
+defvar("hbase", hbase, (value_t)Word_Buffer, &rsp_word);
+
+/** The address where the next word or instruction will be written */
+defvar("here", here, (value_t)Word_Buffer, &hbase_word);
+
+defvar("hsize", hsize, WORD_BUF_SZ, &here_word);
+
 /** The last generated error code */
-defvar("errno", errno, 0, &rsp_word);
+defvar("errcode", errcode, 0, &hsize_word);
 
 /** Address of the most recently defined word */
-defvar("latest", latest, (value_t)LATEST_BUILTIN, &errno_word);
+defvar("latest", latest, (value_t)LATEST_BUILTIN, &errcode_word);
 
 /** The current state of the interpreter */
 defvar("state", state, 0, &latest_word);
 
-/** The address where the next word or instruction will be written */
-defvar("here", here, (value_t)Word_Buffer, &state_word);
-
 /** Read a character from the default input source */
-defcode("key", key, &here_word, 0u) {
+defcode("key", key, &state_word, 0u) {
     onward_aspush(fetch_char());
 }
 
@@ -174,15 +178,8 @@ defcode("find", find, &lit, 0u) {
     onward_aspush((value_t)curr);
 }
 
-/** Abort an executing operation as gracefully as possible */
-defcode("abort", _abort, &find, 0u) {
-    asp = asb;
-    rsp = rsb;
-    pc  = 0u;
-}
-
 /** Execute a word */
-defcode("exec", exec, &_abort, 0u) {
+defcode("exec", exec, &find, 0u) {
     /* Load up the word to be executed, saving off the current state */
     value_t start = rsp;
     word_t* to_exec[] = { (word_t*)onward_aspop(), 0u };
@@ -308,7 +305,7 @@ defcode("interp", interp, &zbr, 0u) {
                 }
             /* Report an error */
             } else {
-                errno = ERR_UNKNOWN_WORD;
+                errcode = ERR_UNKNOWN_WORD;
                 (void)onward_aspop();
             }
         }
@@ -328,27 +325,33 @@ defcode("@", fetch, &interp, 0u) {
 /** Store the top item on the stack at the address represented by the second
  * item on the stack */
 defcode("!", store, &fetch, 0u) {
-    *((value_t*)onward_aspop()) = onward_aspop();
+    value_t  val  = onward_aspop();
+    value_t* addr = (value_t*)onward_aspop();
+    *(addr) = val;
 }
 
-/** Add the given ammount to the value at the given location */
+/** Add the given amount to the value at the given location */
 defcode("+!", add_store, &store, 0u) {
-    *((value_t*)onward_aspop()) += onward_aspop();
+    value_t  val  = onward_aspop();
+    value_t* addr = (value_t*)onward_aspop();
+    *(addr) += val;
 }
 
 /** Subtract the given ammount from the value at the given location */
 defcode("-!", sub_store, &add_store, 0u) {
-    *((value_t*)onward_aspop()) -= onward_aspop();
+    value_t  val  = onward_aspop();
+    value_t* addr = (value_t*)onward_aspop();
+    *(addr) -= val;
 }
 
 /** Fetch a byte from the given location */
 defcode("b@", byte_fetch, &sub_store, 0u) {
-    onward_aspush( (value_t)*((char*)onward_aspop()) );
+//    onward_aspush( (value_t)*((char*)onward_aspop()) );
 }
 
 /** Store a byte in an address at the given location */
 defcode("b!", byte_store, &byte_fetch, 0u) {
-    *((char*)onward_aspop()) = (char)onward_aspop();
+//    *((char*)onward_aspop()) = (char)onward_aspop();
 }
 
 /** Copy a block of memory to a new location */
@@ -663,6 +666,28 @@ defcode("syscall", syscall, &errfile_word, 0u) {
     System_Calls[onward_aspop()]();
 }
 
+defcode("dumpw", dumpw, &syscall, 0u) {
+    word_t* word = (word_t*)onward_aspop();
+    printf("name:\t'%s'\n", word->name);
+    printf("flags:\t%#zx\n", word->flags);
+    printf("link:\t%p\n", word->link);
+    /* Print the word's instructions */
+    if (word->flags & F_PRIMITIVE_MSK) {
+        printf("code:\t%p\n", word->code);
+    } else {
+        printf("code:");
+        word_t** code = (word_t**)word->code;
+        while(*code) {
+            printf("\t%s", (*code)->name);
+            if ((*code == &lit) || (*code == &zbr) || (*code == &br))
+                printf(" %zd", (intptr_t)*(++code));
+            code++;
+            puts("");
+        }
+        printf("\tret\n");
+    }
+}
+
 value_t fetch_char(void)
 {
     value_t ch = (value_t)fgetc((FILE*)infile);
@@ -686,7 +711,7 @@ void print_stack(void) {
     for (i = 4; i >= 0; i--) {
         value_t* curr = top-i;
         if (curr > base)
-            printf("%zd ", *curr);
+            printf("%#zx ", *curr);
     }
     puts(")");
     printf("errcode: %zd\n", errcode);
@@ -699,6 +724,7 @@ void parse(FILE* file) {
     if (file == stdin)
         printf(":> ");
     while (!feof(file)) {
+        errcode = 0;
         interp_code();
         if ((file == stdin) && Newline_Consumed) {
             print_stack();
@@ -721,13 +747,14 @@ void parse_file(char* fname) {
 int main(int argc, char** argv) {
     int i;
     /* Initialize implementation specific words */
-    latest  = (value_t)&syscall;
+    latest  = (value_t)&dumpw;
     infile  = (value_t)stdin;
     outfile = (value_t)stdout;
     errfile = (value_t)stderr;
     /* Load any dictionaries specified on the  command line */
     for (i = 1; i < argc; i++)
         parse_file(argv[i]);
+    printf("Memory Usage: %zd / %zd\n", here - (value_t)Word_Buffer, sizeof(Word_Buffer));
     /* Start the REPL */
     parse(stdin);
     return 0;
