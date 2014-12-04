@@ -1,3 +1,15 @@
+\ Runtime Words
+\ -----------------------------------------------------------------------------
+: depth asp @ asb @ - ;
+
+: aligned
+    CELLSZ 1 - \ Calculate the value to add
+    dup ~ rot  \ Calculate the bitmask
+    + &        \ Apply the mask to align the number
+;
+
+: align here dup @ aligned ! ;
+
 \ Compiler Words
 \ -----------------------------------------------------------------------------
 : immediate
@@ -18,6 +30,10 @@
 : literal immediate
     ' lit , , \ Compile the top item on the stack as a literal
 ;
+
+: const word create [compile] literal 0 , ;
+
+: dump word find dumpw ;
 
 \ Stack Manipulation Words
 \ -----------------------------------------------------------------------------
