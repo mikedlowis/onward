@@ -17,7 +17,7 @@
    CELLSZ +        \ Add offset to get to the flags field
    dup @           \ Fetch the current value
    F_IMMEDIATE | ! \ Set the immediate bit
-; immediate
+; immediate \ Use the immediate word to make the immediate word immediate :D
 
 : [compile] immediate
     word find ,
@@ -29,6 +29,17 @@
 
 : literal immediate
     ' lit , , \ Compile the top item on the stack as a literal
+;
+
+: allot here @ dup rot + here swap ! ;
+
+: cells CELLSZ * ;
+
+: variable
+    1 cells allot
+    word create
+    [compile] literal
+    0 ,
 ;
 
 : const word create [compile] literal 0 , ;
@@ -114,6 +125,7 @@
 \ Comment Words
 \ -----------------------------------------------------------------------------
 : #  [compile] \ ;
+
 : #! [compile] \ ;
 
 : ( immediate

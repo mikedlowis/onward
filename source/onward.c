@@ -209,7 +209,9 @@ defcode("create", create, &exec, 0u) {
     char* name = (char*)onward_aspop();
     /* Copy the name to a more permanent location */
     size_t str_size = strlen(name) + 1;
-    size_t new_size = str_size + (sizeof(value_t) - (str_size % sizeof(value_t)));
+    size_t new_size = (str_size % sizeof(value_t))
+                        ? ((str_size + (sizeof(value_t) - 1)) & ~sizeof(value_t))
+                        : str_size;
     name = memcpy((void*)here, name, str_size);
     here += new_size;
     /* Start populating the word definition */
