@@ -380,12 +380,12 @@ defcode("swap", swap, &drop, 0u) {
 }
 
 /* Duplicates the top item of the stack */
-defcode("dup", dup, &swap, 0u) {
+defcode("dup", _dup, &swap, 0u) {
     onward_aspush(onward_aspeek(0));
 }
 
 /* Duplicates the first item on the stack if the item is non-zero */
-defcode("?dup", dup_if, &dup, 0u) {
+defcode("?dup", dup_if, &_dup, 0u) {
     if (onward_aspeek(0)) onward_aspush(onward_aspeek(0));
 }
 
@@ -655,6 +655,13 @@ static syscall_fn_t System_Calls[7] = {
  *****************************************************************************/
 #ifdef STANDALONE
 #include <stdbool.h>
+#include <limits.h>
+#include <malloc.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
 
 static bool Newline_Consumed = false;
 value_t Argument_Stack[ARG_STACK_SZ];
@@ -668,28 +675,6 @@ defcode("syscall", syscall, &errfile_word, 0u) {
     System_Calls[onward_aspop()]();
 }
 
-defcode("dumpw", dumpw, &syscall, 0u) {
-    word_t* word = (word_t*)onward_aspop();
-    printf("name:\t'%s'\n", word->name);
-    printf("flags:\t%#zx\n", word->flags);
-    printf("link:\t%p\n", word->link);
-    /* Print the word's instructions */
-    if (word->flags & F_PRIMITIVE_MSK) {
-        printf("code:\t%p\n", word->code);
-    } else {
-        printf("code:");
-        word_t** code = (word_t**)word->code;
-        while(*code) {
-            printf("\t%s", (*code)->name);
-            if ((*code == &lit) || (*code == &zbr) || (*code == &br))
-                printf(" %zd", (intptr_t)*(++code));
-            code++;
-            puts("");
-        }
-        printf("\tret\n");
-    }
-}
-
 value_t fetch_char(void)
 {
     value_t ch = (value_t)fgetc((FILE*)infile);
@@ -701,6 +686,42 @@ value_t fetch_char(void)
 void emit_char(value_t val)
 {
     fputc((int)val, (FILE*)outfile);
+}
+
+void path_join(char* base, ...) {
+    char* str = NULL;
+    va_list args;
+    va_start(args, base); /* Requires the last fixed parameter (to get the address) */
+    while((str = va_arg(args,char*)))
+        strcat(base, str);
+    va_end(args);
+}
+
+void get_bin_dir(const char* binname, char* binpath) {
+    char* path = NULL;
+    /* Check for an ENV override */
+    if ((path = getenv("ONWARD_ROOT"))) {
+        strcpy(binpath, path);
+    /* Check if binname is absolute path */
+    } else if (binname[0] == '/') {
+        strcpy(binpath, binname);
+    /* Check if binname is relative path */
+    } else if (strchr(binname, '/') && getcwd(binpath, PATH_MAX+1)) {
+        path_join(binpath,"/",binname, NULL);
+    /* Check the PATH var */
+    } else if ((path = strdup(getenv("PATH")))) {
+        char* begin = path;
+        for (path = strtok(path, ":"); path != NULL; path = strtok(NULL, ":"), binpath[0] = '\0') {
+            path_join(binpath, path, "/", binname, NULL);
+            if (access(binpath, X_OK) == 0) { break; }
+        }
+        free(begin);
+    } else {
+        binpath[0] = '\0';
+    }
+    /* Chop off the last / and everything that follows */
+    if ((path = strrchr(binpath, '/')))
+        *path = '\0';
 }
 
 void print_stack(void) {
@@ -749,10 +770,16 @@ void parse_file(char* fname) {
 int main(int argc, char** argv) {
     int i;
     /* Initialize implementation specific words */
-    latest  = (value_t)&dumpw;
+    latest  = (value_t)&syscall;
     infile  = (value_t)stdin;
     outfile = (value_t)stdout;
     errfile = (value_t)stderr;
+    /* Locate and load the onward base source file */
+    char* path = malloc(PATH_MAX+1);
+    get_bin_dir(argv[0], path);
+    path_join(path, "/source/onward.ft", NULL);
+    parse_file(path);
+    free(path);
     /* Load any dictionaries specified on the  command line */
     for (i = 1; i < argc; i++)
         parse_file(argv[i]);
