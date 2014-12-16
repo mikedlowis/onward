@@ -663,6 +663,10 @@ static syscall_fn_t System_Calls[7] = {
 #include <string.h>
 #include <stdarg.h>
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 static bool Newline_Consumed = false;
 value_t Argument_Stack[ARG_STACK_SZ];
 value_t Return_Stack[RET_STACK_SZ];
