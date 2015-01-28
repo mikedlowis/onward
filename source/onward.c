@@ -2,6 +2,7 @@
 #include "onward_sys.h"
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 static value_t char_oneof(char ch, char* chs);
 
@@ -536,27 +537,33 @@ value_t onward_pcfetch(void) {
 
 void onward_aspush(value_t val) {
     asp += sizeof(value_t);
+    assert(asp <= (asb + ARG_STACK_SZ));
     *((value_t*)asp) = val;
 }
 
 value_t onward_aspeek(value_t val) {
-    return *((value_t*)(asp + (val * sizeof(value_t))));
+    uintptr_t location = asp + (val * sizeof(value_t));
+    assert(location > asb);
+    return *((value_t*)(location));
 }
 
 value_t onward_aspop(void) {
     value_t val = *((value_t*)asp);
     asp -= sizeof(value_t);
+    assert(asp >= asb);
     return val;
 }
 
 void onward_rspush(value_t val) {
     rsp += sizeof(value_t);
+    assert(rsp <= (rsb + RET_STACK_SZ));
     *((value_t*)rsp) = val;
 }
 
 value_t onward_rspop(void) {
     value_t val = *((value_t*)rsp);
     rsp -= sizeof(value_t);
+    assert(rsp >= rsb);
     return val;
 }
 
