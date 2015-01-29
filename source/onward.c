@@ -45,11 +45,13 @@ defvar("rssz", rssz, RET_STACK_SZ, &rsb_word);
 /** The address of the top of the return stack */
 defvar("rsp", rsp, (value_t)Return_Stack-1, &rssz_word);
 
+/** Base of the user-defined word buffer */
 defvar("hbase", hbase, (value_t)Word_Buffer, &rsp_word);
 
 /** The address where the next word or instruction will be written */
 defvar("here", here, (value_t)Word_Buffer, &hbase_word);
 
+/** Size of the user-defined word buffer */
 defvar("hsize", hsize, WORD_BUF_SZ, &here_word);
 
 /** The last generated error code */
@@ -91,11 +93,11 @@ defcode("word", word, &dropline, 0u) {
         curr = (int)onward_aspop();
     } while (char_oneof((char)curr, " \t\r\n"));
     /* Copy characters into the buffer */
-    do {
+    while(((int)curr != EOF) && !char_oneof((char)curr, " \t\r\n")) {
         *str++ = (char)curr;
         key_code();
         curr = (int)onward_aspop();
-    } while(((int)curr != EOF) && !char_oneof((char)curr, " \t\r\n"));
+    }
     /* Terminate the string */
     *str = '\0';
     /* Return the internal buffer */
@@ -292,6 +294,7 @@ defcode("interp", interp, &zbr, 0u) {
             }
         /* otherwise, look it up */
         } else {
+            char* name = (char*)onward_aspeek(0);
             /* Lookup the word in the dictionary */
             find_code();
             /* If we found a definition execute it */
@@ -310,6 +313,7 @@ defcode("interp", interp, &zbr, 0u) {
             } else {
                 errcode = ERR_UNKNOWN_WORD;
                 (void)onward_aspop();
+                printf("Unknown word: %s\n", name);
             }
         }
     /* Otherwise, discard it */
@@ -764,6 +768,9 @@ void parse(FILE* file) {
             print_stack();
             printf(":> ");
             Newline_Consumed = false;
+            errcode = 0;
+        } else if (errcode != 0) {
+            fprintf(stderr, "Error (%d) while parsing file\n", (int)errcode);
             errcode = 0;
         }
     }
