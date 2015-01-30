@@ -351,12 +351,14 @@ defcode("-!", sub_store, &add_store, 0u) {
 
 /** Fetch a byte from the given location */
 defcode("b@", byte_fetch, &sub_store, 0u) {
-//    onward_aspush( (value_t)*((char*)onward_aspop()) );
+    onward_aspush( (value_t)*((char*)onward_aspop()) );
 }
 
 /** Store a byte in an address at the given location */
 defcode("b!", byte_store, &byte_fetch, 0u) {
-//    *((char*)onward_aspop()) = (char)onward_aspop();
+    char val   = (char)onward_aspop();
+    char* addr = (char*)onward_aspop();
+    *(addr) = val;
 }
 
 /** Copy a block of memory to a new location */

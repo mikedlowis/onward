@@ -44,8 +44,6 @@
 
 : const word create [compile] literal 0 , ;
 
-: dump word find dumpw ;
-
 \ Stack Manipulation Words
 \ -----------------------------------------------------------------------------
 : nip swap drop ;
@@ -143,4 +141,40 @@
     dup 0 = until      \ continue until we reach matching close paren, depth 0
     drop               \ drop the depth counter
 ;
+
+\ String Words
+\ -----------------------------------------------------------------------------
+: s" immediate
+    here @
+    here @
+    begin
+    \ while ( key != '"' )
+    key dup 34 <> while
+        over swap b!
+        1 +
+    repeat
+    drop
+    dup 0 b!
+    here over align !
+    drop
+;
+
+: emit+
+    dup b@ dup if
+        emit 1 +
+    else
+        drop
+    then
+;
+
+: semit
+    begin
+    dup b@ dup while
+        emit
+        1 +
+    repeat
+    drop
+;
+
+: sput semit 10 emit ;
 
