@@ -2,6 +2,7 @@
 #include "onward_sys.h"
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 static value_t char_oneof(char ch, char* chs);
 
@@ -44,11 +45,13 @@ defvar("rssz", rssz, RET_STACK_SZ, &rsb_word);
 /** The address of the top of the return stack */
 defvar("rsp", rsp, (value_t)Return_Stack-1, &rssz_word);
 
+/** Base of the user-defined word buffer */
 defvar("hbase", hbase, (value_t)Word_Buffer, &rsp_word);
 
 /** The address where the next word or instruction will be written */
 defvar("here", here, (value_t)Word_Buffer, &hbase_word);
 
+/** Size of the user-defined word buffer */
 defvar("hsize", hsize, WORD_BUF_SZ, &here_word);
 
 /** The last generated error code */
@@ -90,11 +93,11 @@ defcode("word", word, &dropline, 0u) {
         curr = (int)onward_aspop();
     } while (char_oneof((char)curr, " \t\r\n"));
     /* Copy characters into the buffer */
-    do {
+    while(((int)curr != EOF) && !char_oneof((char)curr, " \t\r\n")) {
         *str++ = (char)curr;
         key_code();
         curr = (int)onward_aspop();
-    } while(((int)curr != EOF) && !char_oneof((char)curr, " \t\r\n"));
+    }
     /* Terminate the string */
     *str = '\0';
     /* Return the internal buffer */
@@ -209,9 +212,7 @@ defcode("create", create, &exec, 0u) {
     char* name = (char*)onward_aspop();
     /* Copy the name to a more permanent location */
     size_t str_size = strlen(name) + 1;
-    size_t new_size = (str_size % sizeof(value_t))
-                        ? ((str_size + (sizeof(value_t) - 1)) & ~sizeof(value_t))
-                        : str_size;
+    size_t new_size = str_size + ((sizeof(value_t) - (str_size % sizeof(value_t))) % sizeof(value_t));
     name = memcpy((void*)here, name, str_size);
     here += new_size;
     /* Start populating the word definition */
@@ -291,6 +292,7 @@ defcode("interp", interp, &zbr, 0u) {
             }
         /* otherwise, look it up */
         } else {
+            char* name = (char*)onward_aspeek(0);
             /* Lookup the word in the dictionary */
             find_code();
             /* If we found a definition execute it */
@@ -309,6 +311,7 @@ defcode("interp", interp, &zbr, 0u) {
             } else {
                 errcode = ERR_UNKNOWN_WORD;
                 (void)onward_aspop();
+                printf("Unknown word: %s\n", name);
             }
         }
     /* Otherwise, discard it */
@@ -348,12 +351,14 @@ defcode("-!", sub_store, &add_store, 0u) {
 
 /** Fetch a byte from the given location */
 defcode("b@", byte_fetch, &sub_store, 0u) {
-//    onward_aspush( (value_t)*((char*)onward_aspop()) );
+    onward_aspush( (value_t)*((char*)onward_aspop()) );
 }
 
 /** Store a byte in an address at the given location */
 defcode("b!", byte_store, &byte_fetch, 0u) {
-//    *((char*)onward_aspop()) = (char)onward_aspop();
+    char val   = (char)onward_aspop();
+    char* addr = (char*)onward_aspop();
+    *(addr) = val;
 }
 
 /** Copy a block of memory to a new location */
@@ -380,12 +385,12 @@ defcode("swap", swap, &drop, 0u) {
 }
 
 /* Duplicates the top item of the stack */
-defcode("dup", dup, &swap, 0u) {
+defcode("dup", _dup, &swap, 0u) {
     onward_aspush(onward_aspeek(0));
 }
 
 /* Duplicates the first item on the stack if the item is non-zero */
-defcode("?dup", dup_if, &dup, 0u) {
+defcode("?dup", dup_if, &_dup, 0u) {
     if (onward_aspeek(0)) onward_aspush(onward_aspeek(0));
 }
 
@@ -536,27 +541,33 @@ value_t onward_pcfetch(void) {
 
 void onward_aspush(value_t val) {
     asp += sizeof(value_t);
+    assert(asp <= (asb + ARG_STACK_SZ));
     *((value_t*)asp) = val;
 }
 
 value_t onward_aspeek(value_t val) {
-    return *((value_t*)(asp + (val * sizeof(value_t))));
+    uintptr_t location = asp + (val * sizeof(value_t));
+    assert(location > asb);
+    return *((value_t*)(location));
 }
 
 value_t onward_aspop(void) {
     value_t val = *((value_t*)asp);
     asp -= sizeof(value_t);
+    assert(asp >= asb);
     return val;
 }
 
 void onward_rspush(value_t val) {
     rsp += sizeof(value_t);
+    assert(rsp <= (rsb + RET_STACK_SZ));
     *((value_t*)rsp) = val;
 }
 
 value_t onward_rspop(void) {
     value_t val = *((value_t*)rsp);
     rsp -= sizeof(value_t);
+    assert(rsp >= rsb);
     return val;
 }
 

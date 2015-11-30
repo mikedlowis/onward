@@ -172,7 +172,7 @@ deccode(byte_store);
 deccode(block_copy);
 deccode(drop);
 deccode(swap);
-deccode(dup);
+deccode(_dup);
 deccode(dup_if);
 deccode(over);
 deccode(rot);
