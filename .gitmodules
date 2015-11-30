@@ -1,9 +1,3 @@
 [submodule "build-system"]
 	path = build-system
 	url = https://github.com/mikedlowis/build-system.git
-[submodule "modules/build-system"]
-	path = modules/build-system
-	url = https://github.com/mikedlowis/build-system.git
-[submodule "modules/atf"]
-	path = modules/atf
-	url = https://github.com/mikedlowis/atf.git
