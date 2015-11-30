@@ -36,7 +36,6 @@ options:
 	@echo "  LDFLAGS  = ${LDFLAGS}"
 	@echo "  AR       = ${AR}"
 	@echo "  ARFLAGS  = ${ARFLAGS}"
-	@echo "  ARFLAGS  = ${MAKEDEPEND}"
 
 ${LIB}: ${OBJS}
 	@echo AR $@
