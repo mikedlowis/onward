@@ -45,7 +45,7 @@ typedef struct {
 
 #define deccode(c_name)       \
     void c_name##_code(void); \
-    const word_t c_name       \
+    const word_t c_name
 
 /** Define a built-in word that executes native code */
 #define defcode(name_str, c_name, prev, flags) \
@@ -61,7 +61,7 @@ typedef struct {
     void c_name##_code(void)
 
 #define decword(c_name) \
-    const word_t c_name \
+    const word_t c_name
 
 /** Define a built-in word that is defined by references to other words. */
 #define defword(name_str, c_name, prev, flags) \
@@ -78,25 +78,25 @@ typedef struct {
 
 #define decvar(c_name)         \
     value_t c_name;            \
-    const word_t c_name##_word \
+    const word_t c_name##_word
 
 /** Define a built-in word representing a variable with the provided value */
 #define defvar(name_str, c_name, initial, prev)  \
-    value_t c_name = initial;                    \
+    extern value_t c_name;                       \
     defcode(name_str, c_name##_word, prev, 0u) { \
-        onward_aspush((value_t)&c_name);         \
-    }
+        onward_aspush((value_t)&c_name); }       \
+    value_t c_name = initial
 
 #define decconst(c_name)       \
     const value_t c_name;      \
-    const word_t c_name##_word \
+    const word_t c_name##_word
 
 /** Define a built-in word representing a constant with the provided value */
 #define defconst(name_str, c_name, value, prev)  \
-    const value_t c_name = value;                \
+    extern const value_t c_name;                 \
     defcode(name_str, c_name##_word, prev, 0u) { \
-        onward_aspush(c_name);                   \
-    }
+        onward_aspush(c_name); }                 \
+    const value_t c_name = value
 
 #define ERR_NONE              (0x00)
 #define ERR_UNKNOWN_WORD      (0x01)
