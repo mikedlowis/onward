@@ -15,18 +15,25 @@ CFLAGS   += ${INCS} ${CPPFLAGS}
 LDFLAGS  += ${LIBS}
 ARFLAGS   = rcs
 
+# commands
+COMPILE = @echo CC $@; ${CC} ${CFLAGS} -c -o $@ $<
+LINK    = @echo LD $@; ${LD} -o $@ $^ ${LDFLAGS}
+ARCHIVE = @echo AR $@; ${AR} ${ARFLAGS} $@ $^
+CLEAN   = @rm -f
+
 #------------------------------------------------------------------------------
 # Build Targets and Rules
 #------------------------------------------------------------------------------
-SRCS = source/onward.c source/main.c
-OBJS = ${SRCS:.c=.o}
-LIB  = libonward.a
-BIN  = onward
-TEST_SRCS = tests/atf.c tests/main.c tests/test_interpreter.c tests/test_vars.c
-TEST_OBJS = ${TEST_SRCS:.c=.o}
-TEST_BIN  = testonward
+LIBNAME = onward
+LIB     = lib${LIBNAME}.a
+BIN     = ${LIBNAME}
+DEPS    = ${OBJS:.o=.d}
+OBJS    = source/onward.o source/main.o
 
-all: options ${BIN} ${TEST_BIN}
+# load user-specific settings
+-include config.mk
+
+all: options ${LIB} ${BIN}
 
 options:
 	@echo "Toolchain Configuration:"
@@ -38,25 +45,20 @@ options:
 	@echo "  ARFLAGS  = ${ARFLAGS}"
 
 ${LIB}: ${OBJS}
-	@echo AR $@
-	@${AR} ${ARFLAGS} $@ ${OBJS}
+	${ARCHIVE}
 
 ${BIN}: ${LIB}
-	@echo LD $@
-	@${LD} -o $@ ${LIB} ${LDFLAGS}
-
-
-${TEST_BIN}: ${TEST_OBJS} ${LIB}
-	@echo LD $@
-	@${LD} -o $@ ${TEST_OBJS} ${LIB} ${LDFLAGS}
-	-./$@
+	${LINK}
 
 .c.o:
-	@echo CC $<
-	@${CC} ${CFLAGS} -c -o $@ $<
+	${COMPILE}
 
 clean:
-	@rm -f ${LIB} ${BIN} ${TEST_BIN} ${OBJS} ${TEST_OBJS}
+	${CLEAN} ${LIB} ${BIN} ${OBJS} ${DEPS}
+	${CLEAN} ${OBJS:.o=.gcno} ${OBJS:.o=.gcda}
+
+# load dependency files
+-include ${DEPS}
 
 .PHONY: all options
 

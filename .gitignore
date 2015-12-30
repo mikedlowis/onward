@@ -1,4 +1,8 @@
 *.o
+*.d
+*.gcno
+*.gcda
 *.a
 *.exe
 .rsconscache
+config.mk
