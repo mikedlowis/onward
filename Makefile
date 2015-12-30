@@ -3,6 +3,9 @@
 #------------------------------------------------------------------------------
 # Update these variables according to your requirements.
 
+# version
+VERSION = 0.0.1
+
 # tools
 CC = c99
 LD = ${CC}
@@ -22,16 +25,28 @@ ARCHIVE = @echo AR $@; ${AR} ${ARFLAGS} $@ $^
 CLEAN   = @rm -f
 
 #------------------------------------------------------------------------------
-# Build Targets and Rules
+# Build-Specific Macros
 #------------------------------------------------------------------------------
+# Main build settings
 LIBNAME = onward
 LIB     = lib${LIBNAME}.a
 BIN     = ${LIBNAME}
 DEPS    = ${OBJS:.o=.d}
 OBJS    = source/onward.o source/main.o
 
+# Distribution dir and tarball settings
+DISTDIR   = ${LIBNAME}-${VERSION}
+DISTTAR   = ${DISTDIR}.tar
+DISTGZ    = ${DISTTAR}.gz
+DISTFILES = config.mk LICENSE.md Makefile README.md source tests
+
 # load user-specific settings
 -include config.mk
+
+#------------------------------------------------------------------------------
+# Phony Targets
+#------------------------------------------------------------------------------
+.PHONY: all options dist
 
 all: options ${LIB} ${BIN}
 
@@ -44,21 +59,32 @@ options:
 	@echo "  AR       = ${AR}"
 	@echo "  ARFLAGS  = ${ARFLAGS}"
 
+dist: clean
+	@echo DIST ${DISTGZ}
+	@mkdir -p ${DISTDIR}
+	@cp -R ${DISTFILES} ${DISTDIR}
+	@tar -cf ${DISTTAR} ${DISTDIR}
+	@gzip ${DISTTAR}
+	@rm -rf ${DISTDIR}
+
+clean:
+	${CLEAN} ${LIB} ${BIN} ${OBJS} ${DEPS}
+	${CLEAN} ${OBJS:.o=.gcno} ${OBJS:.o=.gcda}
+	${CLEAN} ${DEPS} ${TEST_DEPS}
+	${CLEAN} ${DISTTAR} ${DISTGZ}
+
+#------------------------------------------------------------------------------
+# Target-Specific Rules
+#------------------------------------------------------------------------------
+.c.o:
+	${COMPILE}
+
 ${LIB}: ${OBJS}
 	${ARCHIVE}
 
 ${BIN}: ${LIB}
 	${LINK}
 
-.c.o:
-	${COMPILE}
-
-clean:
-	${CLEAN} ${LIB} ${BIN} ${OBJS} ${DEPS}
-	${CLEAN} ${OBJS:.o=.gcno} ${OBJS:.o=.gcda}
-
 # load dependency files
 -include ${DEPS}
-
-.PHONY: all options
 
